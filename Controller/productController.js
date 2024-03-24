@@ -19,6 +19,7 @@ const addProduct = asyncHandler(async (req, res) => {
             return res.status(400).json({ message: 'cant find category' })
         }
 
+        
         const product = new Product({
             name,
             description,
@@ -205,6 +206,27 @@ const productCategory = asyncHandler(async (req, res) => {
 })
 
 
+//upload product image 
+const upload = asyncHandler(async(req, res) => {
+    try {
+        const productImage = await Product.findById(req.params.id)
+        if(!productImage) {
+            res.status(404).json({ message: 'image error'})
+        }
+        //find the image file
+        const image = req.file.filename
+
+        productImage.image = image
+
+        //save to database
+        await productImage.save()
+        
+        res.status(200).json({ message: 'poduct image uploaded'})
+
+    } catch (error) {
+        throw error
+    }
+})
 
 
 
@@ -217,5 +239,6 @@ module.exports = {
     countProduct,
     featuredProduct,
     limitedFeature,
-    productCategory
+    productCategory,
+    upload
 }
