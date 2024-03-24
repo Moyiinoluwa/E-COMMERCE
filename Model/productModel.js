@@ -71,4 +71,12 @@ const productSchema = monogoose.Schema({
     timestamps: true
 })
 
+//to acces the id easily on the frontend
+productSchema.virtual('id').get(function () {
+    return this._id.toHexString();
+})
+
+productSchema.set('toJSON', {
+    virtuals: true
+})
 module.exports = monogoose.model('Product', productSchema) 

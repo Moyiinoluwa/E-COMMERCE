@@ -9,13 +9,13 @@ const Category = require('../Model/categoryModel')
 const addProduct = asyncHandler(async (req, res) => {
     try {
         const { name, image, countInStock, description, richDescription,
-            brand, price, rating, numReviews, isFeatured, category } = req.body;
+            brand, price, rating, numReviews, isFeatured } = req.body;
 
         //validate if the category is valid
         const categoryId = req.params.id
-        const categorry = await Category.findById(categoryId)
-    
-        if (!categorry) {
+        const category = await Category.findById(categoryId)
+
+        if (!category) {
             return res.status(400).json({ message: 'cant find category' })
         }
 
@@ -45,6 +45,8 @@ const addProduct = asyncHandler(async (req, res) => {
 //get all products
 const productList = asyncHandler(async (req, res) => {
     try {
+        
+        //const product = await Product.find().select('name brand -_id')
         const product = await Product.find()
 
         res.status(200).json(product)
@@ -73,13 +75,13 @@ const getProduct = asyncHandler(async (req, res) => {
 const updateProduct = asyncHandler(async (req, res) => {
     try {
         //validate the category before updating it
-        const categorry = await Category.findById(req.category.body)
-        if (!categorry) {
-            res.status(400).json({ message: 'no category' })
-        }
+        // const categorry = await Category.findById(req.params.id)
+        // if (!categorry) {
+        //     res.status(400).json({ message: 'no category' })
+        // }
 
         const { name, image, countInStock, description, richDescription,
-            brand, price, rating, numReviews, isFeatured, category } = req.body;
+            brand, price, rating, numReviews, isFeatured } = req.body;
 
         const product = await Product.findByIdAndUpdate(req.params.id)
         if (!product) {
@@ -96,7 +98,6 @@ const updateProduct = asyncHandler(async (req, res) => {
         product.rating = rating
         product.numReviews = numReviews
         product.isFeatured = isFeatured
-        product.category = category
 
         await product.save()
 
@@ -110,25 +111,111 @@ const updateProduct = asyncHandler(async (req, res) => {
 //delete product
 const deleteProduct = asyncHandler(async (req, res) => {
     try {
-        const { id } = req.params
+        //get the product to be deleted
+        const product = await Product.findByIdAndDelete(req.params.id)
 
-        const product = await Product.findById(id)
         if (!product) {
-            res.status(400).json({ message: 'cant delete product' })
+            res.status(404).json({ message: 'cannot delete product' })
+        } else {
+            res.status(200).json({ message: 'product deleted' })
         }
-
-        const exit = await Product.deleteOne({ _id: id })
-        res.status(200).json({ message: 'product deleted' })
 
     } catch (error) {
         throw error
     }
 });
 
+
+//count all products
+const countProduct = asyncHandler(async (req, res) => {
+    try {
+        const productCount = await Product.countDocuments()
+
+        if (productCount === undefined) {
+            res.status(404).json({ message: 'cant count product' })
+        } else {
+            res.status(200).json({ count: productCount })
+        }
+
+    } catch (error) {
+        throw error
+    }
+});
+
+//Get all featured product
+const featuredProduct = asyncHandler(async (req, res) => {
+    try {
+
+        const product = await Product.find({ isFeatured: true })
+
+        if (!product) {
+            res.status(404).json({ message: 'No featured product' })
+        } else {
+            res.status(200).json(product)
+        }
+    } catch (error) {
+        throw error
+    }
+});
+
+
+//get limited featured product
+const limitedFeature = asyncHandler(async(req, res) => {
+    try {
+        const count = req.params.count ? req.params.count : 0
+
+        const product = await Product.find({ isFeatured: true}).limit(+count)
+
+        if(!product) {
+            res.status(404).json({ message: 'cant get featured products'})
+        }
+
+        res.status(200).json(product)
+
+
+    } catch (error) {
+        throw error
+    }
+});
+
+//Get product by category with query
+const productCategory = asyncHandler(async (req, res) => {
+    try {
+        //this object filters products based on category
+        let filter = {}
+
+        //check if the query request has a category parameter
+        if(req.query.category) {
+            //if the category exist, split it by comma
+            filter = { category: req.query.category.split(',')}
+        }
+
+        //find all products, populate the category field
+    const product = await Product.find(filter).populate('category')
+
+    if(!product) {
+        res.status(400).json({ message: 'no products'})
+    }
+
+    res.status(200).json(product)
+
+    } catch (error) {
+        throw error
+    }
+})
+
+
+
+
+
 module.exports = {
     addProduct,
     productList,
     getProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    countProduct,
+    featuredProduct,
+    limitedFeature,
+    productCategory
 }
